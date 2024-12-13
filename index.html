@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Football Scoreboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f2e6ff; /* สีพื้นหลังโทนม่วงอ่อน */
+            margin: 0;
+        }
+
+        .scoreboard {
+            text-align: center;
+            border: 2px solid #8a2be2; /* ขอบเป็นสีม่วง */
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #8a2be2;
+            margin-bottom: 20px;
+        }
+
+        .team-section, .score-section, .control-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        input, button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            border: 2px solid #8a2be2; /* ขอบของช่องกรอกและปุ่ม */
+            border-radius: 5px;
+            outline: none;
+        }
+
+        input:focus, button:focus {
+            border-color: #ffd700; /* เมื่อโฟกัสจะเป็นสีทอง */
+        }
+
+        button {
+            background-color: #8a2be2; /* ปุ่มเป็นสีม่วง */
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #6a1b9a; /* เมื่อวางเมาส์เหนือปุ่ม */
+        }
+
+        .score {
+            font-size: 36px;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #8a2be2; /* สีของคะแนน */
+        }
+
+        #time-display {
+            font-size: 24px;
+            color: #ffd700; /* สีทองของเวลา */
+        }
+
+        label {
+            font-size: 18px;
+            color: #8a2be2;
+        }
+
+        #team1-name-display, #team2-name-display {
+            font-size: 20px;
+            font-weight: bold;
+            color: #8a2be2;
+        }
+
+        .message {
+            font-size: 20px;
+            color: red;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="scoreboard">
+        <div class="title">
+            กีฬาสี กฟฉ.1 ประจำปี 2567
+        </div>
+
+        <div class="team-section">
+            <div>
+                <label for="team1-name">ทีม 1:</label>
+                <input type="text" id="team1-name" value="ทีม A">
+                <span id="team1-name-display">ทีม A</span>
+            </div>
+            <div>
+                <label for="team2-name">ทีม 2:</label>
+                <input type="text" id="team2-name" value="ทีม B">
+                <span id="team2-name-display">ทีม B</span>
+            </div>
+        </div>
+
+        <div class="score-section">
+            <div class="score">
+                <div id="team1-score">0</div> : <div id="team2-score">0</div>
+            </div>
+            <div>
+                <span id="time-display">00:00:00</span> <!-- แสดงเวลาในรูปแบบ นาที:วินาที:__ -->
+            </div>
+        </div>
+
+        <div class="control-section">
+            <button id="start-btn">เริ่ม</button>
+            <button id="reset-btn">รีเซ็ตเวลา</button>
+            <button id="half-btn" style="display: none;">เริ่มครึ่งหลัง</button>
+            <div>
+                <button id="score1-btn">เพิ่มสกอร์ ทีม A</button>
+                <button id="score2-btn">เพิ่มสกอร์ ทีม B</button>
+            </div>
+        </div>
+        <div id="message" class="message"></div>
+    </div>
+
+    <script>
+        let team1Name = document.getElementById('team1-name');
+        let team2Name = document.getElementById('team2-name');
+        let team1NameDisplay = document.getElementById('team1-name-display');
+        let team2NameDisplay = document.getElementById('team2-name-display');
+        let team1Score = document.getElementById('team1-score');
+        let team2Score = document.getElementById('team2-score');
+        let timeDisplay = document.getElementById('time-display');
+        let startBtn = document.getElementById('start-btn');
+        let resetBtn = document.getElementById('reset-btn');
+        let halfBtn = document.getElementById('half-btn');
+        let score1Btn = document.getElementById('score1-btn');
+        let score2Btn = document.getElementById('score2-btn');
+        let message = document.getElementById('message');
+
+        let timer;
+        let seconds = 0;
+        let isRunning = false;
+        let isSecondHalf = false; // ตรวจสอบว่ากำลังเล่นครึ่งหลัง
+
+        function updateTime() {
+            if (isRunning) {
+                seconds++;
+                let minutes = Math.floor(seconds / 60);
+                let secs = seconds % 60;
+
+                // แสดงเวลาเป็น นาที:วินาที:__
+                timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}:__`;
+
+                // เมื่อครบ 45 นาที แสดงข้อความหมดเวลา
+                if (minutes === 45 && secs === 0) {
+                    clearInterval(timer);
+                    message.textContent = "หมดเวลา! กรุณากดเริ่มครึ่งหลัง";
+                    halfBtn.style.display = "inline-block"; // แสดงปุ่มเริ่มครึ่งหลัง
+                }
+
+                // เมื่อครบ 90 นาที ให้แสดงข้อความหมดเวลา
+                if (minutes === 90 && secs === 0) {
+                    clearInterval(timer);
+                    message.textContent = "หมดเวลา!";
+                    startBtn.textContent = "เริ่มใหม่"; // เปลี่ยนปุ่มเริ่มเป็นเริ่มใหม่
+                }
+            }
+        }
+
+        startBtn.addEventListener('click', function() {
+            if (isRunning) {
+                clearInterval(timer);
+                startBtn.textContent = "เริ่ม";
+                message.textContent = ""; // ลบข้อความหมดเวลา
+                halfBtn.style.display = "none"; // ซ่อนปุ่มเริ่มครึ่งหลัง
+            } else {
+                timer = setInterval(updateTime, 1000);
+                startBtn.textContent = "หยุด";
+            }
+            isRunning = !isRunning;
+        });
+
+        resetBtn.addEventListener('click', function() {
+            clearInterval(timer);
+            seconds = 0;
+            timeDisplay.textContent = "00:00:00";
+            message.textContent = "";
+            startBtn.textContent = "เริ่ม";
+            halfBtn.style.display = "none";
+            team1Score.textContent = "0";
+            team2Score.textContent = "0";
+            isRunning = false;
+            isSecondHalf = false;
+        });
+
+        halfBtn.addEventListener('click', function() {
+            isSecondHalf = true;
+            seconds = 0; // รีเซ็ตเวลาใหม่สำหรับครึ่งหลัง
+            timeDisplay.textContent = "00:00:00";
+            message.textContent = ""; // ลบข้อความหมดเวลา
+            startBtn.textContent = "หยุด"; // เปลี่ยนปุ่มเป็นหยุด
+            halfBtn.style.display = "none"; // ซ่อนปุ่มเริ่มครึ่งหลัง
+            isRunning = true;
+            timer = setInterval(updateTime, 1000); // เริ่มนับเวลาใหม่
+        });
+
+        score1Btn.addEventListener('click', function() {
+            team1Score.textContent = parseInt(team1Score.textContent) + 1;
+        });
+
+        score2Btn.addEventListener('click', function() {
+            team2Score.textContent = parseInt(team2Score.textContent) + 1;
+        });
+
+        team1Name.addEventListener('input', function() {
+            team1NameDisplay.textContent = team1Name.value;
+        });
+
+        team2Name.addEventListener('input', function() {
+            team2NameDisplay.textContent = team2Name.value;
+        });
+    </script>
+</body>
+</html>
